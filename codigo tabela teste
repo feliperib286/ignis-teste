@@ -1,0 +1,150 @@
+-- Fatec Jacareí (Lat, Long): (-23.29489053336776, -45.966728703926805)
+
+-- Ponto poli 1, a: -23.29712743094964, -45.96850198110727   (etec)
+-- Ponto poli 1, b: -23.29423079602481,  -45.96699806248586  (bpm)
+-- Ponto poli 1, c: -23.297115988416977, -45.96337486198872  (triang. lower right)
+
+-- Ponto poli 2, c: -23.294123644377827, -45.97189008935107  (triang. upper left)
+
+create extension if not exists postgis;
+
+-- Criação da tabela com as geometrias de  ponto
+create table localizacao (
+    id  numeric primary key,
+    nome varchar(100),
+    geometria geometry(point, 4326) -- '4326'  world geodetic system 84 (latitude/longitude) (SRID - spatial reference identifier)
+);
+
+insert into localizacao (id, nome, geometria)
+values
+(1, 'Fatec JAC', ST_SetSRID(ST_MakePoint(-45.96850198110727, -23.29489053336776 ), 4326));
+
+
+create table area_interesse (
+    id numeric primary key,
+    nome varchar(100),
+    geometria geometry(polygon, 4326) -- tipo da geometria - polígono
+    
+);
+
+
+-- observar que as coordenadas da geometria do polígono são inseridas na ordem (long1 lat1,long2 lat2, etc)
+insert into area_interesse  (id, nome, geometria)
+values
+(1, 'Área triangular 1', ST_SetSRID(
+    ST_GeomFromText('POLYGON((-45.96850198110727 -23.29712743094964,
+                              -45.96699806248586 -23.29423079602481,
+							  -45.96337486198872 -23.297115988416977,
+							  -45.96850198110727 -23.29712743094964))'), 4326)
+);
+
+
+insert into area_interesse  (id, nome, geometria)
+values
+(2, 'Área triangular 2', ST_SetSRID(
+    ST_GeomFromText('POLYGON((-45.96850198110727 -23.29712743094964,
+                              -45.96699806248586 -23.29423079602481,
+							  -45.97189008935107 -23.294123644377827,
+							  -45.96850198110727 -23.29712743094964))'), 4326)
+);
+insert into area_interesse  (id, nome, geometria)
+values
+(3, 'Bioma Amazônica', ST_SetSRID(
+    ST_GeomFromText('POLYGON((-73.9 -3.9,
+							  -66.0 -1.2,
+							  -60.0 -5.2,
+              				  -56.0 -1.2,
+             				  -54.0 -4.2,
+            			      -70.9 -10.9,
+            				  -73.9 -3.9))'), 4326)
+);
+
+INSERT INTO area_interesse (id, nome, geometria) VALUES
+-- Bioma Cerrado
+(4, 'Cerrado', ST_SetSRID(ST_GeomFromText('POLYGON((
+    -56.0 -1.2, -50.0 -2.0, -47.0 -4.5, -45.0 -9.0, -44.0 -14.0, 
+    -50.0 -16.0, -52.0 -18.0, -55.0 -19.5, -57.0 -16.0, -60.0 -14.0, 
+    -61.0 -10.0, -56.0 -1.2))'), 4326)),
+
+-- Bioma Mata Atlântica
+(5, 'Mata Atlântica', ST_SetSRID(ST_GeomFromText('POLYGON((
+    -45.0 -9.0, -44.0 -14.0, -40.0 -18.0, -38.0 -20.0, -36.0 -22.0, 
+    -35.0 -25.0, -44.0 -30.0, -47.0 -27.0, -50.0 -26.0, -52.0 -23.0, 
+    -50.0 -16.0, -45.0 -9.0))'), 4326)),
+
+-- Bioma Caatinga
+(6, 'Caatinga', ST_SetSRID(ST_GeomFromText('POLYGON((
+    -47.0 -4.5, -45.0 -9.0, -40.0 -10.0, -38.0 -12.0, -37.0 -10.0, 
+    -36.0 -9.0, -35.0 -7.0, -36.0 -5.0, -38.0 -4.0, -41.0 -2.5, 
+    -43.0 -3.0, -47.0 -4.5))'), 4326)),
+
+-- Bioma Pantanal
+(7, 'Pantanal', ST_SetSRID(ST_GeomFromText('POLYGON((
+    -57.0 -16.0, -55.0 -19.5, -54.0 -21.0, -55.0 -22.5, -57.0 -23.0, 
+    -59.0 -22.0, -58.5 -19.0, -57.0 -16.0))'), 4326)),
+
+-- Bioma Pampa
+(8, 'Pampa', ST_SetSRID(ST_GeomFromText('POLYGON((
+    -52.0 -23.0, -50.0 -26.0, -52.0 -29.0, -54.0 -30.5, -56.0 -31.5, 
+    -58.0 -32.5, -59.5 -33.0, -56.0 -34.0, -54.0 -34.5, -52.0 -33.5, 
+    -51.0 -32.0, -50.0 -31.0, -48.0 -29.0, -47.0 -27.0, -52.0 -23.0))'), 4326));
+
+CREATE TABLE estados (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(50) NOT NULL,
+    sigla CHAR(2) NOT NULL,
+    capital VARCHAR(50) NOT NULL,
+    area NUMERIC, -- Área em km²
+    geometria GEOMETRY(POLYGON, 4326) -- Geometria do estado
+);
+drop table if exists estados
+INSERT INTO estados (nome, sigla, capital, area, geometria) VALUES
+('Acre', 'AC', 'Rio Branco', 164123.040, ST_SetSRID(ST_GeomFromText(
+    'POLYGON((-72.0 -9.0, -67.0 -9.0, -67.0 -11.0, -72.0 -11.0, -72.0 -9.0))'), 4326)),
+('Alagoas', 'AL', 'Maceió', 27778.506, ST_SetSRID(ST_GeomFromText(
+    'POLYGON((-38.0 -9.0, -35.0 -9.0, -35.0 -11.0, -38.0 -11.0, -38.0 -9.0))'), 4326));
+	
+	CREATE TABLE Estadao (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(50) NOT NULL,
+    sigla CHAR(2) NOT NULL UNIQUE,
+    latitude NUMERIC,  -- Latitude aproximada do centro do estado
+    longitude NUMERIC, -- Longitude aproximada do centro do estado
+    geometria GEOMETRY(POLYGON, 4326) -- Polígono representando os limites do estado
+);
+INSERT INTO Estadao (nome, sigla, latitude, longitude, geometria) 
+VALUES (
+    'Bahia', 
+    'BA', 
+    -12.96, 
+    -38.51, 
+    ST_GeomFromText('POLYGON((-72 -9, -67 -9, -67 -11, -72 -11, -72 -9))', 4326)
+);
+
+
+	
+
+-- consulta isolada de localizações e áreas
+
+select * from area_interesse where id = 1;
+select * from area_interesse where id = 2; 
+select * from area_interesse where id = 3;
+select * from area_interesse where id = 5;
+
+select * from estados;
+select * from Estadao;
+select * from Estadao where id = 1;
+
+select * from estados where id = 1;
+
+select * from area_interesse;
+select * from localizacao union select * from area_interesse where id = 1;
+select * from localizacao union select * from area_interesse where id = 2;
+
+
+-- consulta de intersecção de ponto x polígono
+
+select loc.nome as nome_local, area.nome as nome_area
+from localizacao loc
+join area_interesse area
+  on ST_Within(loc.geometria, area.geometria);
