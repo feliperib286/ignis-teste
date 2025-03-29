@@ -148,3 +148,22 @@ select loc.nome as nome_local, area.nome as nome_area
 from localizacao loc
 join area_interesse area
   on ST_Within(loc.geometria, area.geometria);
+
+
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+CREATE TABLE estados (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100),
+    area GEOMETRY(Polygon, 4326)
+);
+
+INSERT INTO estados (nome, area)
+VALUES 
+('Estado X', ST_SetSRID(ST_GeomFromText('POLYGON((-40.6333 -23.5505, -46.6340 -23.5500, -46.6350 -23.5510, -46.6333 -23.5505))'), 4326));
+
+select* from estados
+
+UPDATE estados
+SET area = ST_SetSRID(ST_GeomFromText('POLYGON((-46.6400 -20.5600, -46.6450 -20.5550, -46.6500 -20.5650, -46.6400 -20.5600))'), 4326)
+WHERE id = 1;
