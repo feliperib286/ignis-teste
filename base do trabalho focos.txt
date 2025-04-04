@@ -96,6 +96,54 @@ ALTER COLUMN risco_fogo TYPE NUMERIC(10,2);
 
 ALTER TABLE risco ALTER COLUMN data TYPE TIMESTAMP USING data::TIMESTAMP;
 
+-- Cria uma view chamada 'vw_risco_estado_goias'
+CREATE VIEW vw_risco_estado_goias AS
+SELECT
+    r.id,                                  -- ID do risco
+    r.data,                                -- Data do registro
+    ST_AsText(r.geometria) AS coordenadas,-- Converte a geometria para texto (coordenadas)
+    r.risco_fogo,                          -- Valor de risco de fogo
+    e.nome AS estado                       -- Nome do estado relacionado
+FROM Risco r
+JOIN Estados e ON r.estado_id = e.id_estado  -- Junta com a tabela Estados usando estado_id
+WHERE e.nome = 'Goiás';                     -- Filtra somente registros do estado "Goiás"
+
+-- Cria uma view chamada 'vw_risco_estado_tocantins'
+CREATE VIEW vw_risco_estado_tocantins AS
+SELECT
+    r.id,
+    r.data,
+    ST_AsText(r.geometria) AS coordenadas,
+    r.risco_fogo,
+    e.nome AS estado
+FROM Risco r
+JOIN Estados e ON r.estado_id = e.id_estado
+WHERE e.nome = 'Tocantins';  -- Filtra somente registros do estado "Tocantins"
+
+
+-- Cria uma view chamada 'vw_risco_bioma_cerrado'
+CREATE VIEW vw_risco_bioma_cerrado AS
+SELECT
+    r.id,                                   -- ID do risco
+    r.data,                                 -- Data do registro
+    ST_AsText(r.geometria) AS coordenadas, -- Converte a geometria para coordenadas em texto
+    r.risco_fogo,                           -- Valor de risco de fogo
+    b.nome AS bioma                         -- Nome do bioma relacionado
+FROM Risco r
+JOIN Bioma b ON r.bioma_id = b.id          -- Junta com a tabela Bioma usando bioma_id
+WHERE b.nome = 'Cerrado';                 -- Filtra registros do bioma "Cerrado"
+
+-- Cria uma view chamada 'vw_risco_bioma_amazonia'
+CREATE VIEW vw_risco_bioma_amazonia AS
+SELECT
+    r.id,
+    r.data,
+    ST_AsText(r.geometria) AS coordenadas,
+    r.risco_fogo,
+    b.nome AS bioma
+FROM Risco r
+JOIN Bioma b ON r.bioma_id = b.id
+WHERE b.nome = 'Amazônia';  -- Filtra registros do bioma "Amazônia"
 
 
 select *from Risco
