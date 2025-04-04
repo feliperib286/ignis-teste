@@ -45,6 +45,7 @@ INSERT INTO Bioma (id, bioma) VALUES
 (4, 'Mata Atlântica'),
 (5, 'Pampa'),
 (6, 'Pantanal');
+select *from Bioma
 
 CREATE TABLE Risco (
     id INTEGER PRIMARY KEY,
@@ -67,6 +68,14 @@ ALTER COLUMN id SET DEFAULT nextval('risco_id_seq');
 SELECT setval('risco_id_seq', (SELECT MAX(id) FROM Risco));
 
 
+ALTER TABLE risco 
+ALTER COLUMN risco_fogo TYPE NUMERIC(10,2);
+
+UPDATE risco SET data = data::DATE;
+ALTER TABLE risco 
+ALTER COLUMN data TYPE DATE 
+USING data::DATE;
+
 
 INSERT INTO Risco (id, data, geometria, estado_id, bioma_id, risco_fogo) VALUES
 (1, '2025-04-03 12:00:00', ST_SetSRID(ST_MakePoint(-63.2822, -3.4650), 4326), 13, 1, 0.85),  -- Amazonas, Amazônia, risco de fogo 0.85
@@ -86,13 +95,9 @@ SELECT * FROM vw_bioma_cerrado;
 
 select *from risco
 
-UPDATE risco SET data = data::DATE;
-ALTER TABLE risco 
-ALTER COLUMN data TYPE DATE 
-USING data::DATE;
 
-ALTER TABLE risco 
-ALTER COLUMN risco_fogo TYPE NUMERIC(10,2);
+
+
 
 ALTER TABLE risco ALTER COLUMN data TYPE TIMESTAMP USING data::TIMESTAMP;
 
@@ -101,55 +106,149 @@ CREATE VIEW vw_risco_estado_goias AS
 SELECT
     r.id,                                  -- ID do risco
     r.data,                                -- Data do registro
-    ST_AsText(r.geometria) AS coordenadas,-- Converte a geometria para texto (coordenadas)
+    r.geometria,                            -- Seleciona a geometria sem conversão para texto
     r.risco_fogo,                          -- Valor de risco de fogo
-    e.nome AS estado                       -- Nome do estado relacionado
+    e.estado AS estado                       -- Nome do estado relacionado
 FROM Risco r
 JOIN Estados e ON r.estado_id = e.id_estado  -- Junta com a tabela Estados usando estado_id
-WHERE e.nome = 'Goiás';                     -- Filtra somente registros do estado "Goiás"
+WHERE e.estado = 'Goiás';                     -- Filtra somente registros do estado "Goiás"
 
+select *from vw_risco_estado_goias
 -- Cria uma view chamada 'vw_risco_estado_tocantins'
 CREATE VIEW vw_risco_estado_tocantins AS
 SELECT
     r.id,
     r.data,
-    ST_AsText(r.geometria) AS coordenadas,
+    r.geometria,                            -- Seleciona a geometria sem conversão para texto
     r.risco_fogo,
-    e.nome AS estado
+    e.estado AS estado
 FROM Risco r
 JOIN Estados e ON r.estado_id = e.id_estado
-WHERE e.nome = 'Tocantins';  -- Filtra somente registros do estado "Tocantins"
+WHERE e.estado = 'Tocantins';  -- Filtra somente registros do estado "Tocantins"
 
+select *from vw_risco_estado_tocantins;
+
+DROP VIEW IF EXISTS vw_risco_estado_tocantins; -- deletar vw
 
 -- Cria uma view chamada 'vw_risco_bioma_cerrado'
 CREATE VIEW vw_risco_bioma_cerrado AS
 SELECT
     r.id,                                   -- ID do risco
     r.data,                                 -- Data do registro
-    ST_AsText(r.geometria) AS coordenadas, -- Converte a geometria para coordenadas em texto
+    r.geometria,                            -- Seleciona a geometria sem conversão para texto
     r.risco_fogo,                           -- Valor de risco de fogo
-    b.nome AS bioma                         -- Nome do bioma relacionado
+    b.bioma AS bioma                         -- Nome do bioma relacionado
 FROM Risco r
 JOIN Bioma b ON r.bioma_id = b.id          -- Junta com a tabela Bioma usando bioma_id
-WHERE b.nome = 'Cerrado';                 -- Filtra registros do bioma "Cerrado"
+WHERE b.bioma = 'Cerrado';                  -- Filtra registros do bioma "Cerrado"
 
+select *from vw_risco_bioma_cerrado
 -- Cria uma view chamada 'vw_risco_bioma_amazonia'
 CREATE VIEW vw_risco_bioma_amazonia AS
 SELECT
     r.id,
     r.data,
-    ST_AsText(r.geometria) AS coordenadas,
+    r.geometria,                            -- Seleciona a geometria sem conversão para texto
     r.risco_fogo,
-    b.nome AS bioma
+    b.bioma AS bioma
 FROM Risco r
 JOIN Bioma b ON r.bioma_id = b.id
-WHERE b.nome = 'Amazônia';  -- Filtra registros do bioma "Amazônia"
+WHERE b.bioma = 'Amazônia';  -- Filtra registros do bioma "Amazônia"
+select *from vw_risco_bioma_amazonia
+
+CREATE VIEW vw_risco_bioma_pantanal_ AS
+SELECT
+    r.id,                                   -- ID do risco
+    r.data,                                 -- Data do registro
+    r.geometria,                            -- Seleciona a geometria sem conversão para texto
+    r.risco_fogo,                           -- Valor de risco de fogo
+    b.bioma AS bioma                        -- Nome do bioma relacionado
+FROM Risco r
+JOIN Bioma b ON r.bioma_id = b.id          -- Junta com a tabela Bioma usando bioma_id
+WHERE b.bioma = 'Pantanal'                  -- Filtra registros do bioma "Cerrado"
+  AND r.data BETWEEN '2025-03-20' AND '2025-03-21';  -- Filtro por data (faixa de datas)
+DROP VIEW IF EXISTS vw_risco_bioma_pantanal; -- deletar vw
+
+select *from vw_risco_bioma_pantanal_
+
+
+-- Seleciona o dia e o maior valor de risco de fogo registrado nesse dia
+SELECT 
+    data::DATE AS dia,                      -- Converte a data para apenas a parte da data (sem hora)
+    MAX(risco_fogo) AS maior_risco          -- Encontra o maior risco de fogo para esse dia
+FROM risco
+GROUP BY dia                                -- Agrupa os dados por dia
+ORDER BY maior_risco DESC                   -- Ordena do maior para o menor risco
+LIMIT 1;                                    -- Retorna apenas o dia com o maior risco registrado
+
+
+-- Seleciona o dia com o maior valor de risco de fogo, junto com o nome do estado e bioma
+SELECT 
+    r.data::DATE AS dia,                    -- Converte a data para apenas a parte da data (sem hora)
+    r.risco_fogo AS maior_risco,            -- Valor do risco de fogo
+    e.estado AS nome_estado,                -- Nome do estado (tabela Estados)
+    b.bioma AS nome_bioma                   -- Nome do bioma (tabela Bioma)
+FROM risco r
+JOIN estados e ON r.estado_id = e.id_estado -- Relaciona com a tabela de Estados
+JOIN bioma b ON r.bioma_id = b.id           -- Relaciona com a tabela de Biomas
+ORDER BY r.risco_fogo DESC                  -- Ordena do maior para o menor risco
+LIMIT 1;                                    -- Retorna apenas o registro com maior risco
+
+-- Seleciona o registro completo com o maior valor de risco de fogo
+SELECT 
+    id,                                      -- ID do registro
+    data,                                    -- Data e hora do registro
+    risco_fogo,                              -- Valor de risco de fogo
+    estado_id,                               -- ID do estado (relaciona com a tabela Estados)
+    bioma_id                                 -- ID do bioma (relaciona com a tabela Bioma)
+FROM risco
+ORDER BY risco_fogo DESC                     -- Ordena do maior para o menor risco
+LIMIT 1;    
+
+-- Seleciona o dia e o maior valor de risco de fogo registrado nesse dia
+SELECT 
+    data::DATE AS dia,                      -- Converte a data para apenas a parte da data (sem hora)
+    MAX(risco_fogo) AS maior_risco          -- Encontra o maior risco de fogo para esse dia
+FROM risco
+GROUP BY dia                                -- Agrupa os dados por dia
+ORDER BY maior_risco DESC                   -- Ordena do maior para o menor risco
+LIMIT 1;                                    -- Retorna apenas o dia com o maior risco registrado
+
+
+-- Seleciona o maior risco de fogo registrado em cada estado, com data e nome do estado
+SELECT DISTINCT ON (e.estado)  -- Garante um único resultado por estado
+    e.estado AS nome_estado,   -- Nome do estado
+    r.data::DATE AS dia,       -- Dia do registro (sem hora)
+    r.risco_fogo AS maior_risco
+FROM risco r
+JOIN estados e ON r.estado_id = e.id_estado
+ORDER BY e.estado, r.risco_fogo DESC;
+
+
+-- Seleciona o maior risco de fogo registrado em cada bioma, com data e nome do bioma
+SELECT DISTINCT ON (b.bioma)  -- Garante um único resultado por bioma
+    b.bioma AS nome_bioma,    -- Nome do bioma
+    r.data::DATE AS dia,      -- Dia do registro
+    r.risco_fogo AS maior_risco
+FROM risco r
+JOIN bioma b ON r.bioma_id = b.id
+ORDER BY b.bioma, r.risco_fogo DESC;
+
+-- Seleciona o maior risco de fogo registrado entre todos os biomas
+SELECT 
+    b.bioma AS nome_bioma,         -- Nome do bioma
+    r.data::DATE AS dia,           -- Dia do registro
+    r.risco_fogo AS maior_risco    -- Valor do risco de fogo
+FROM risco r
+JOIN bioma b ON r.bioma_id = b.id
+ORDER BY r.risco_fogo DESC         -- Ordena do maior para o menor risco
+LIMIT 1;                           -- Retorna apenas o maior registro
+
 
 
 select *from Risco
 
 INSERT INTO Risco ( data, geometria, estado_id, bioma_id, risco_fogo) VALUES
-('2025-03-20  ', ST_SetSRID(ST_MakePoint(-69.873047, -9.43416), 4326), 12, 1, 0.0),
 ('2025-03-20  ', ST_SetSRID(ST_MakePoint(-47.900391, -15.862279), 4326), 53, 3, 0.0),
 ('2025-03-20  ', ST_SetSRID(ST_MakePoint(-39.16573, -14.85794), 4326), 29, 4, 0.73),
 ('2025-03-20  ', ST_SetSRID(ST_MakePoint(-36.6856, -9.28974), 4326), 26, 2, 1.0),
@@ -1190,4 +1289,3 @@ INSERT INTO Risco ( data, geometria, estado_id, bioma_id, risco_fogo) VALUES
 ('2025-04-02  ', ST_SetSRID(ST_MakePoint(-44.49852, -11.25339), 4326), 29, 3, 0.95),
 ('2025-04-02  ', ST_SetSRID(ST_MakePoint(-52.29568, -11.05795), 4326), 51, 1, 0.06),
 ('2025-04-02  ', ST_SetSRID(ST_MakePoint(-50.4972, -20.17527), 4326), 35, 4, 0.4);
-
